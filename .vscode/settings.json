@@ -1,0 +1,17 @@
+{
+  "C_Cpp.intelliSenseEngine": "disabled",
+  "C_Cpp.autocomplete": "disabled",
+  "C_Cpp.errorSquiggles": "disabled",
+  "editor.inlayHints.enabled": "offUnlessPressed",
+  "platformio-ide.autoRebuildAutocompleteIndex": false,
+  "clangd.arguments": [
+    "--background-index",
+    "--compile-commands-dir=${workspaceFolder}",
+    "--query-driver=C:/Users/awuth/.platformio/packages/toolchain-xtensa/bin/xtensa-lx106-elf-*"
+  ],
+  "files.associations": {
+    "*.ino": "cpp",
+    "*.tpp": "cpp"
+  }
+
+}

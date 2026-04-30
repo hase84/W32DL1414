@@ -1,0 +1,22 @@
+CompileFlags:
+  Add: [
+    "-isystemC:/Users/awuth/.platformio/packages/toolchain-xtensa/xtensa-lx106-elf/include",
+    "-isystemC:/Users/awuth/.platformio/packages/toolchain-xtensa/lib/gcc/xtensa-lx106-elf/10.3.0/include",
+    "-isystemC:/Users/awuth/.platformio/packages/toolchain-xtensa/lib/gcc/xtensa-lx106-elf/10.3.0/include/c++/10.3.0",
+    "-isystemC:/Users/awuth/.platformio/packages/toolchain-xtensa/lib/gcc/xtensa-lx106-elf/10.3.0/include/c++/10.3.0/xtensa-lx106-elf",
+    "-isystemC:/Users/awuth/.platformio/packages/framework-arduinoespressif8266/tools/sdk/libc/xtensa-lx106-elf/include",
+    "-isystemC:/Users/awuth/.platformio/packages/toolchain-xtensa/xtensa-lx106-elf/include/c++/10.3.0",
+    "-isystemC:/Users/awuth/OneDrive/Dokumente/ArduinoData/packages/esp32/tools/riscv32-esp-elf-gcc/gcc8_4_0-esp-2021r2/riscv32-esp-elf/include/c++/8.4.0/riscv32-esp-elf/rv32imafc/ilp32f"
+  ]
+  Remove: [
+    "-mlongcalls",
+    "-mtext-section-literals",
+    "-free",
+    "-fipa-pta"
+  ]
+  Compiler: clang++
+
+Diagnostics:
+  Suppress:
+    - expected_fn_body
+    - asm_expected_string
