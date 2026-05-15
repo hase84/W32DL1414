@@ -583,3 +583,115 @@ bool W32DL1414::parseSimpleResponse(uint8_t expected_success_len)
     _lastClientError = W32DL1414_CLIENT_INVALID_RESULT;
     return false;
 }
+
+
+    bool W32DL1414::setCursorEnable(bool value) 
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::getCursorEnable(bool* value)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::setCursorVisible(bool value)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::getCursorVisible(bool* value)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::setCursorPos(uint8_t pos)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::getCursorPos(uint8_t* pos)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::setCursorChar(char c)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::getCursorChar(char* c)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::setCursorBlink10ms(uint8_t value)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::getCursorBlink10ms(uint8_t* value)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::setRefreshMode(uint8_t mode)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::getRefreshMode(uint8_t* mode)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::setScrollMode(uint8_t mode)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::getScrollMode(uint8_t* mode)
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::softReset() 
+    {
+        resetLastErrors();
+        return false;
+    }
+
+    bool W32DL1414::hardReset()
+    {
+        resetLastErrors();
+        return false;
+    }
+
+
+    bool W32DL1414::readDip(uint8_t* value)
+    {
+        resetLastErrors();
+        return false;
+    }

@@ -15,16 +15,35 @@
 /* =========================================================
  * opcodes
  * ========================================================= */
-#define W32DL1414_OPCODE_PING                         0x01
-#define W32DL1414_OPCODE_GET_VERSION                  0x02
-#define W32DL1414_OPCODE_GET_STATUS                   0x03
-#define W32DL1414_OPCODE_WRITE_CHAR                   0x20
-#define W32DL1414_OPCODE_WRITE_BUF                    0x21
-#define W32DL1414_OPCODE_FLUSH                        0x22
-#define W32DL1414_OPCODE_CLEAR                        0x23
-#define W32DL1414_OPCODE_SET_CURSOR                   0x40
-#define W32DL1414_OPCODE_GET_CURSOR                   0x41
-#define W32DL1414_OPCODE_GET_SYSTEM_INFO              0x80
+#define W32DL1414_OPCODE_PING                          0x01
+#define W32DL1414_OPCODE_GET_VERSION                   0x02
+#define W32DL1414_OPCODE_GET_STATUS                    0x03
+
+#define W32DL1414_OPCODE_WRITE_CHAR                    0x20
+#define W32DL1414_OPCODE_WRITE_BUF                     0x21
+#define W32DL1414_OPCODE_FLUSH                         0x22
+#define W32DL1414_OPCODE_CLEAR                         0x23
+
+#define W32DL1414_OPCODE_SET_CURSOR_ENABLE             0x42
+#define W32DL1414_OPCODE_GET_CURSOR_ENABLE             0x43
+#define W32DL1414_OPCODE_SET_CURSOR_VISIBLE            0x44
+#define W32DL1414_OPCODE_GET_CURSOR_VISIBLE            0x45
+#define W32DL1414_OPCODE_SET_CURSOR_POS                0x46
+#define W32DL1414_OPCODE_GET_CURSOR_POS                0x47
+#define W32DL1414_OPCODE_SET_CURSOR_CHAR               0x48
+#define W32DL1414_OPCODE_GET_CURSOR_CHAR               0x49
+#define W32DL1414_OPCODE_SET_CURSOR_BLINK_FREQ         0x4A
+#define W32DL1414_OPCODE_GET_CURSOR_BLINK_FREQ         0x4B
+
+#define W32DL1414_OPCODE_SET_REFRESH_MODE              0x60
+#define W32DL1414_OPCODE_GET_REFRESH_MODE              0x61
+#define W32DL1414_OPCODE_SET_SCROLL_MODE               0x62
+#define W32DL1414_OPCODE_GET_SCROLL_MODE               0x63
+
+#define W32DL1414_OPCODE_GET_SYSTEM_INFO               0x80
+#define W32DL1414_OPCODE_SOFT_RESET                    0x81
+#define W32DL1414_OPCODE_HARD_RESET                    0x82
+#define W32DL1414_OPCODE_READ_DIP                      0x83
 
 
 /* =========================================================
@@ -99,9 +118,15 @@
 #define W32DL1414_ASCII_LF                            0x0A
 #define W32DL1414_ASCII_CR                            0x0D
 
+/* =========================================================
+ * DISPLAY REFRESH MODES / AUTO vs MANUAL FLUSH
+ * ========================================================= */
+#define W32DL1414_REFRESH_MODE_AUTO                    0x00
+#define W32DL1414_REFRESH_MODE_MANUAL                  0x01
 
 /* =========================================================
- * scroll directions
+ * SCROLL MODES
  * ========================================================= */
-#define W32DL1414_SCROLL_LEFT                         0x00
-#define W32DL1414_SCROLL_RIGHT                        0x01
+#define W32DL1414_SCROLL_MODE_OFF                      0x00
+#define W32DL1414_SCROLL_MODE_LEFT                     0x01
+#define W32DL1414_SCROLL_MODE_UP                       0x02

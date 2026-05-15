@@ -26,3 +26,21 @@ void opcode_handle_flush(volatile uint8_t input_len, const uint8_t* input_buf, u
 void opcode_handle_clear(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_write_char(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_write_buf(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+
+void opcode_handle_set_cursor_enable(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_cursor_enable(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_set_cursor_visible(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_cursor_visible(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_set_cursor_pos(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_cursor_pos(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_set_cursor_char(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_cursor_char(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_set_cursor_blink_freq(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_cursor_blink_freq(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_set_refresh_mode(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_refresh_mode(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_set_scroll_mode(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_get_scroll_mode(volatile uint8_t input_len, const uint8_t *input_buf,uint8_t *output_len,uint8_t *output_buf);
+void opcode_handle_soft_reset(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_hard_reset(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
+void opcode_handle_read_dip(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);

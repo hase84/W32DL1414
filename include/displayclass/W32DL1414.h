@@ -78,6 +78,24 @@ public:
     bool isBusy() const;
     bool isCompatible() const;
 
+    bool setCursorEnable(bool value);
+    bool getCursorEnable(bool* value);
+    bool setCursorVisible(bool value);
+    bool getCursorVisible(bool* value);
+    bool setCursorPos(uint8_t pos);
+    bool getCursorPos(uint8_t* pos);
+    bool setCursorChar(char c);
+    bool getCursorChar(char* c);
+    bool setCursorBlink10ms(uint8_t value);
+    bool getCursorBlink10ms(uint8_t* value);
+    bool setRefreshMode(uint8_t mode);
+    bool getRefreshMode(uint8_t* mode);
+    bool setScrollMode(uint8_t mode);
+    bool getScrollMode(uint8_t* mode);
+    bool softReset();
+    bool hardReset();
+    bool readDip(uint8_t* value);
+
     uint8_t getLastClientError() const { return _lastClientError; }
     uint8_t getLastDeviceError() const { return _lastDeviceError; }
     uint8_t getLastResponseLen() const { return _lastResponseLen; }

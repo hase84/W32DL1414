@@ -554,6 +554,318 @@ bool action_fill_clear(TestReport& r) {
     return true;
 }
 
+bool action_cycle_clear_chars(TestReport& r) {
+    if (!prepare_display_test("cycle_clear_chars")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    static const char chars[] = { '1', '/', '-', '\\', '*' };
+
+    while (true) {
+        for (uint8_t i = 0; i < sizeof(chars); ++i) {
+            if (Serial.available()) {
+                while (Serial.available()) {
+                    Serial.read();
+                }
+                add_check_bool(r, "cycle+flush+keypress", true, true);
+                snprintf(r.note, sizeof(r.note), "clear/flush cycle stopped by keypress");
+                return true;
+            }
+
+            display.clear(chars[i]);
+            
+            bool ok = display.flush();
+            if (!ok) {
+                capture_fail_snapshot(r);
+                add_check_bool(r, "flush", true, false);
+                snprintf(r.note, sizeof(r.note), "flush failed after clear('%c')", chars[i]);
+                return false;
+            }
+
+            ok = wait_idle(30000);
+            if (!ok) {
+                capture_fail_snapshot(r);
+                add_check_bool(r, "wait_idle", true, false);
+                snprintf(r.note, sizeof(r.note), "wait_idle failed after clear('%c')", chars[i]);
+                return false;
+            }
+        }
+    }
+}
+
+bool action_cursor_enable(TestReport& r) {
+    if (!prepare_display_test("cursor_enable")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    bool ok = display.setCursorEnable(true);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setCursorEnable", true, false);
+        snprintf(r.note, sizeof(r.note), "setCursorEnable(true) failed");
+        return false;
+    }
+
+    bool value = false;
+    ok = display.getCursorEnable(&value);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getCursorEnable", true, false);
+        snprintf(r.note, sizeof(r.note), "getCursorEnable() failed");
+        return false;
+    }
+
+    add_check_bool(r, "cursor_enable", true, value);
+    snprintf(r.note, sizeof(r.note), "set/get cursor enable");
+    return value == true;
+}
+
+bool action_cursor_visible(TestReport& r) {
+    if (!prepare_display_test("cursor_visible")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    bool ok = display.setCursorVisible(true);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setCursorVisible", true, false);
+        snprintf(r.note, sizeof(r.note), "setCursorVisible(true) failed");
+        return false;
+    }
+
+    bool value = false;
+    ok = display.getCursorVisible(&value);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getCursorVisible", true, false);
+        snprintf(r.note, sizeof(r.note), "getCursorVisible() failed");
+        return false;
+    }
+
+    add_check_bool(r, "cursor_visible", true, value);
+    snprintf(r.note, sizeof(r.note), "set/get cursor visible");
+    return value == true;
+}
+
+bool action_cursor_pos(TestReport& r) {
+    if (!prepare_display_test("cursor_pos")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    const uint8_t expected = 42;
+    bool ok = display.setCursorPos(expected);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setCursorPos", true, false);
+        snprintf(r.note, sizeof(r.note), "setCursorPos(%u) failed", expected);
+        return false;
+    }
+
+    uint8_t actual = 0xFF;
+    ok = display.getCursorPos(&actual);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getCursorPos", true, false);
+        snprintf(r.note, sizeof(r.note), "getCursorPos() failed");
+        return false;
+    }
+
+    add_check_eq_u8(r, "cursor_pos", expected, actual);
+    snprintf(r.note, sizeof(r.note), "set/get cursor pos %u", expected);
+    return actual == expected;
+}
+
+bool action_cursor_char(TestReport& r) {
+    if (!prepare_display_test("cursor_char")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    const uint8_t expected = '_';
+    bool ok = display.setCursorChar((char)expected);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setCursorChar", true, false);
+        snprintf(r.note, sizeof(r.note), "setCursorChar('_') failed");
+        return false;
+    }
+
+    uint8_t actual = 0x00;
+    ok = display.getCursorChar((char*)&actual);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getCursorChar", true, false);
+        snprintf(r.note, sizeof(r.note), "getCursorChar() failed");
+        return false;
+    }
+
+    add_check_eq_u8(r, "cursor_char", expected, actual);
+    snprintf(r.note, sizeof(r.note), "set/get cursor char '_'");
+    return actual == expected;
+}
+
+bool action_cursor_blink_10ms(TestReport& r) {
+    if (!prepare_display_test("cursor_blink_10ms")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    const uint8_t expected = 25;
+    bool ok = display.setCursorBlink10ms(expected);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setCursorBlink10ms", true, false);
+        snprintf(r.note, sizeof(r.note), "setCursorBlink10ms(%u) failed", expected);
+        return false;
+    }
+
+    uint8_t actual = 0xFF;
+    ok = display.getCursorBlink10ms(&actual);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getCursorBlink10ms", true, false);
+        snprintf(r.note, sizeof(r.note), "getCursorBlink10ms() failed");
+        return false;
+    }
+
+    add_check_eq_u8(r, "cursor_blink_10ms", expected, actual);
+    snprintf(r.note, sizeof(r.note), "set/get cursor blink %u x10ms", expected);
+    return actual == expected;
+}
+
+bool action_refresh_mode(TestReport& r) {
+    if (!prepare_display_test("refresh_mode")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    const uint8_t expected = 1;
+    bool ok = display.setRefreshMode(expected);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setRefreshMode", true, false);
+        snprintf(r.note, sizeof(r.note), "setRefreshMode(%u) failed", expected);
+        return false;
+    }
+
+    uint8_t actual = 0xFF;
+    ok = display.getRefreshMode(&actual);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getRefreshMode", true, false);
+        snprintf(r.note, sizeof(r.note), "getRefreshMode() failed");
+        return false;
+    }
+
+    add_check_eq_u8(r, "refresh_mode", expected, actual);
+    snprintf(r.note, sizeof(r.note), "set/get refresh mode %u", expected);
+    return actual == expected;
+}
+
+bool action_scroll_mode(TestReport& r) {
+    if (!prepare_display_test("scroll_mode")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    const uint8_t expected = 1;
+    bool ok = display.setScrollMode(expected);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "setScrollMode", true, false);
+        snprintf(r.note, sizeof(r.note), "setScrollMode(%u) failed", expected);
+        return false;
+    }
+
+    uint8_t actual = 0xFF;
+    ok = display.getScrollMode(&actual);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "getScrollMode", true, false);
+        snprintf(r.note, sizeof(r.note), "getScrollMode() failed");
+        return false;
+    }
+
+    add_check_eq_u8(r, "scroll_mode", expected, actual);
+    snprintf(r.note, sizeof(r.note), "set/get scroll mode %u", expected);
+    return actual == expected;
+}
+
+bool action_read_dip(TestReport& r) {
+    uint8_t dip = 0xFF;
+    bool ok = display.readDip(&dip);
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "readDip", true, false);
+        snprintf(r.note, sizeof(r.note), "readDip() failed");
+        return false;
+    }
+
+    add_check_range_i(r, "dip", 0, 255, dip);
+    snprintf(r.note, sizeof(r.note), "dip=0x%02X", dip);
+    return true;
+}
+
+bool action_soft_reset(TestReport& r) {
+    bool ok = display.softReset();
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "softReset", true, false);
+        snprintf(r.note, sizeof(r.note), "softReset() failed");
+        return false;
+    }
+
+    delay(50);
+    uint8_t ping = display.ping();
+    add_check_eq_u8(r, "ping_after_reset", 0xAA, ping);
+    snprintf(r.note, sizeof(r.note), "soft reset");
+    return ping == 0xAA;
+}
+
+bool action_hard_reset(TestReport& r) {
+    bool ok = display.hardReset();
+    if (!ok) {
+        capture_fail_snapshot(r);
+        add_check_bool(r, "hardReset", true, false);
+        snprintf(r.note, sizeof(r.note), "hardReset() failed");
+        return false;
+    }
+
+    delay(100);
+    bool begin_ok = display.begin();
+    add_check_bool(r, "begin_after_reset", true, begin_ok);
+    if (!begin_ok) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "begin after hard reset failed");
+        return false;
+    }
+
+    uint8_t ping = display.ping();
+    add_check_eq_u8(r, "ping_after_reset", 0xAA, ping);
+    snprintf(r.note, sizeof(r.note), "hard reset + begin");
+    return ping == 0xAA;
+}
+
 bool action_status(TestReport& r) {
     W32DL1414RawStatus st = display.getStatusRaw();
     char buf[128];
@@ -579,6 +891,17 @@ TestSpec tests[] = {
     {'l', "long_printf", false, action_long_printf},
     {'k', "fill_clear",  false, action_fill_clear},
     {'s', "status",      true,  action_status},
+    {'t', "cycle_clear_chars", false, action_cycle_clear_chars},
+    {'u', "cursor_enable",       true,  action_cursor_enable},
+    {'v', "cursor_visible",      true,  action_cursor_visible},
+    {'m', "cursor_pos",          true,  action_cursor_pos},
+    {'n', "cursor_char",         true,  action_cursor_char},
+    {'b', "cursor_blink_10ms",   true,  action_cursor_blink_10ms},
+    {'r', "refresh_mode",        true,  action_refresh_mode},
+    {'o', "scroll_mode",         true,  action_scroll_mode},
+    {'d', "read_dip",            true,  action_read_dip},
+    {'y', "soft_reset",          false, action_soft_reset},
+    {'x', "hard_reset",          false, action_hard_reset}
 };
 
 const TestSpec* find_test_by_key(char k) {
@@ -606,24 +929,28 @@ void run_all_tests() {
     }
 }
 
-void print_help() {
+void print_help() 
+{
     Serial.println();
     Serial.println("======================================================");
     Serial.println(" W32DL1414 TEST & DEBUG CONSOLE");
     Serial.println("======================================================");
+
     Serial.println(" General:");
     Serial.println("   h  help");
     Serial.println("   a  run all tests");
     Serial.println("   s  show raw status");
     Serial.println();
-    Serial.println(" Read tests:");
+
+    Serial.println(" Basic:");
     Serial.println("   1  begin");
     Serial.println("   2  ping");
     Serial.println("   3  version");
     Serial.println("   4  sysinfo");
     Serial.println("   9  cursor set/get");
     Serial.println();
-    Serial.println(" Write tests:");
+
+    Serial.println(" Text / buffer:");
     Serial.println("   5  write_char + flush");
     Serial.println("   6  write_buffer + flush");
     Serial.println("   7  clear + flush");
@@ -632,6 +959,26 @@ void print_help() {
     Serial.println("   f  printf + flush");
     Serial.println("   l  long printf + flush");
     Serial.println("   k  fill + flush + clear");
+    Serial.println("   t  cycle clear chars");
+    Serial.println();
+
+    Serial.println(" Cursor:");
+    Serial.println("   u  cursor enable set/get");
+    Serial.println("   v  cursor visible set/get");
+    Serial.println("   m  cursor pos set/get");
+    Serial.println("   n  cursor char set/get");
+    Serial.println("   b  cursor blink x10ms set/get");
+    Serial.println();
+
+    Serial.println(" Modes:");
+    Serial.println("   r  refresh mode set/get");
+    Serial.println("   o  scroll mode set/get");
+    Serial.println();
+
+    Serial.println(" System:");
+    Serial.println("   d  read dip");
+    Serial.println("   y  soft reset");
+    Serial.println("   x  hard reset");
     Serial.println("======================================================");
 }
 
