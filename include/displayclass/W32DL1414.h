@@ -23,6 +23,27 @@ struct W32DL1414RawStatus
     uint8_t job_progress;
 };
 
+enum W32DL1414ClientError : uint8_t {
+    W32DL1414_CLIENT_OK = 0,
+    W32DL1414_CLIENT_WIRE_TX = 1,
+    W32DL1414_CLIENT_WIRE_RX_SHORT = 2,
+    W32DL1414_CLIENT_INVALID_RESULT = 3,
+    W32DL1414_CLIENT_DEVICE_ERROR = 4,
+    W32DL1414_CLIENT_INVALID_RESPONSE_LEN = 5,
+};
+
+static inline const char* w32dl1414_client_error_text(uint8_t e) {
+    switch (e) {
+        case W32DL1414_CLIENT_OK: return "OK";
+        case W32DL1414_CLIENT_WIRE_TX: return "WIRE_TX";
+        case W32DL1414_CLIENT_WIRE_RX_SHORT: return "WIRE_RX_SHORT";
+        case W32DL1414_CLIENT_INVALID_RESULT: return "BAD_RESULT";
+        case W32DL1414_CLIENT_DEVICE_ERROR: return "DEVICE_ERR";
+        case W32DL1414_CLIENT_INVALID_RESPONSE_LEN: return "BAD_LEN";
+        default: return "?";
+    }
+}
+
 class W32DL1414 {
 public:
     explicit W32DL1414(uint8_t i2c_address);
@@ -57,6 +78,11 @@ public:
     bool isBusy() const;
     bool isCompatible() const;
 
+    uint8_t getLastClientError() const { return _lastClientError; }
+    uint8_t getLastDeviceError() const { return _lastDeviceError; }
+    uint8_t getLastResponseLen() const { return _lastResponseLen; }
+    uint8_t getLastWireError() const { return _lastWireError; }
+
 private:
     bool executeOpcode(uint8_t opcode,
                        const uint8_t* input_buf,
@@ -67,6 +93,7 @@ private:
 
     bool pollJobStatus(uint16_t timeout_ms);
     bool isRetryableBusy(uint8_t result_code) const;
+    bool parseSimpleResponse(uint8_t expected_success_len);
 
     static constexpr uint8_t required_firmware_major = 0;
     static constexpr uint8_t required_firmware_minor = 1;
@@ -77,4 +104,16 @@ private:
     uint8_t firmware_patch_version = 0;
     uint8_t cursor_position = 0;
     bool compatible = false;
+
+    uint8_t _lastClientError = W32DL1414_CLIENT_OK;
+    uint8_t _lastDeviceError = 0x00;
+    uint8_t _lastResponseLen = 0;
+    uint8_t _lastWireError = 0;
+
+    void resetLastErrors() {
+        _lastClientError = W32DL1414_CLIENT_OK;
+        _lastDeviceError = 0x00;
+        _lastResponseLen = 0;
+        _lastWireError = 0;
+    }
 };

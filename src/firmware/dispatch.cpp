@@ -5,19 +5,20 @@
 
 
 static const opcode_handler_entry_t opcode_handlers[] = {
-    { W32DL1414_OPCODE_PING,            OPCODE_FLAG_ALLOWED_DURING_JOB, opcode_handle_ping },
-    { W32DL1414_OPCODE_GET_VERSION,     OPCODE_FLAG_ALLOWED_DURING_JOB, opcode_handle_get_version },
-    { W32DL1414_OPCODE_GET_STATUS,      OPCODE_FLAG_ALLOWED_DURING_JOB, opcode_handle_get_status },
-    { W32DL1414_OPCODE_GET_SYSTEM_INFO, OPCODE_FLAG_ALLOWED_DURING_JOB, opcode_handle_get_system_info },
-    { W32DL1414_OPCODE_WRITE_CHAR,      OPCODE_FLAG_NONE,               opcode_handle_write_char },
-    { W32DL1414_OPCODE_WRITE_BUF,       OPCODE_FLAG_NONE,               opcode_handle_write_buf },
-    { W32DL1414_OPCODE_FLUSH,           OPCODE_FLAG_NONE,               opcode_handle_flush },
-    { W32DL1414_OPCODE_CLEAR,           OPCODE_FLAG_NONE,               opcode_handle_clear },
+//  { opcode,                           flags,                          min_input_len,  max_input_len, handler_fn                    },    
+    { W32DL1414_OPCODE_PING,            OPCODE_FLAG_ALLOWED_DURING_JOB, 1,                          1, opcode_handle_ping            },
+    { W32DL1414_OPCODE_GET_VERSION,     OPCODE_FLAG_ALLOWED_DURING_JOB, 1,                          1, opcode_handle_get_version     },
+    { W32DL1414_OPCODE_GET_STATUS,      OPCODE_FLAG_ALLOWED_DURING_JOB, 1,                          1, opcode_handle_get_status      },
+    { W32DL1414_OPCODE_GET_SYSTEM_INFO, OPCODE_FLAG_ALLOWED_DURING_JOB, 1,                          1, opcode_handle_get_system_info },
+    { W32DL1414_OPCODE_WRITE_CHAR,      OPCODE_FLAG_NONE,               3,                          3, opcode_handle_write_char      },
+    { W32DL1414_OPCODE_WRITE_BUF,       OPCODE_FLAG_NONE,               4, W32DL1414_MAX_TRANSFER_LEN, opcode_handle_write_buf       },
+    { W32DL1414_OPCODE_FLUSH,           OPCODE_FLAG_NONE,               1,                          1, opcode_handle_flush           },
+    { W32DL1414_OPCODE_CLEAR,           OPCODE_FLAG_NONE,               2,                          2, opcode_handle_clear           },
 };
 
 static const job_handler_entry_t job_handlers[] = {
-    { W32DL1414_JOB_TYPE_FLUSH_VRAM, job_tick_flush_vram },
-    { W32DL1414_JOB_TYPE_CLEAR_VRAM, job_tick_clear_vram },
+    { W32DL1414_JOB_TYPE_FLUSH_VRAM, 4, 1, job_tick_flush_vram },
+    { W32DL1414_JOB_TYPE_CLEAR_VRAM, 4, 0, job_tick_clear_vram },
 };
 
 

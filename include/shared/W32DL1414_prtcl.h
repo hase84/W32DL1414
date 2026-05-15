@@ -41,6 +41,7 @@
 #define W32DL1414_ERROR_INTERNAL                      0xE4
 #define W32DL1414_ERROR_BUFFER_OVERFLOW               0xE5
 #define W32DL1414_ERROR_NOT_IMPLEMENTED               0xE6
+#define W32DL1414_ERROR_INVALID_LENGTH                0xE7
 
 
 /* =========================================================

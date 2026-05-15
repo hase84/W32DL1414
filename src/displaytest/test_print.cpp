@@ -1,4 +1,4 @@
-#include <Arduino.h>
+/*#include <Arduino.h>
 #include <Wire.h>
 #include "displayclass/W32DL1414.h"
 
@@ -96,4 +96,4 @@ void setup()
 
 void loop()
 {
-}
+}*/

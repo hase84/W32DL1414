@@ -10,6 +10,8 @@ typedef void (*opcode_handler_fn)(volatile uint8_t input_len,
 struct opcode_handler_entry_t {
     uint8_t opcode;
     uint8_t flags;
+    uint8_t min_input_len;
+    uint8_t max_input_len;
     opcode_handler_fn handler;
 };
 

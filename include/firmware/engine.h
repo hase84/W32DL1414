@@ -13,6 +13,9 @@ struct engine_job_t {
     uint8_t arg1;
     uint8_t progress;
     uint8_t total;
+    uint8_t steps_per_tick;
+    uint8_t settle_ticks;
+
 };
 
 struct engine_operation_t {
@@ -32,6 +35,9 @@ void engine_reset(void);
 
 uint8_t engine_get_status(void);
 engine_state_t* engine_get_state(void);
+
+void engine_preserve_state_snapshot(void);
+const engine_state_t* engine_get_preserved_state(void);
 
 void engine_set_ready(void);
 void engine_set_busy(void);

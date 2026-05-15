@@ -16,7 +16,7 @@ static void shift_command_word(uint16_t command)
 {
     PORTA &= ~(1 << RCLK);
     PORTA &= ~(1 << SRCLK);
-    delayMicroseconds(8);
+    delayMicroseconds(1);   //8
 
     for (uint8_t i = 0; i < 16; i++) {
         if (command & (1 << i)) {
@@ -25,19 +25,19 @@ static void shift_command_word(uint16_t command)
             PORTA &= ~(1 << SER_OUT);
         }
 
-        delayMicroseconds(4);
+        delayMicroseconds(1);  //   4     
         PORTA |= (1 << SRCLK);
-        delayMicroseconds(6);
+        delayMicroseconds(1);   //6
         PORTA &= ~(1 << SRCLK);
-        delayMicroseconds(4);
+        delayMicroseconds(1);   //4
     }
 
     PORTA &= ~(1 << SER_OUT);
-    delayMicroseconds(20);
+    delayMicroseconds(1);   //20
     PORTA |= (1 << RCLK);
-    delayMicroseconds(20);
+    delayMicroseconds(1);  //20  
     PORTA &= ~(1 << RCLK);
-    delayMicroseconds(30);
+    delayMicroseconds(1);  //30
 }
 
 static void write_digit_to_display(uint8_t position, uint8_t ascii)
@@ -55,19 +55,19 @@ static void write_digit_to_display(uint8_t position, uint8_t ascii)
         ((uint16_t)(column & 0x07) << CMD_OFFSET_COL);
 
     shift_command_word(0x0000);
-    delayMicroseconds(10);
+//    delayMicroseconds(1);  //10
 
     shift_command_word(data_and_address);
-    delayMicroseconds(10);
+//    delayMicroseconds(5);   //10
 
     shift_command_word(data_and_address | write_pulse);
-    delayMicroseconds(10);
+//    delayMicroseconds(5);  //10
 
     shift_command_word(data_and_address);
-    delayMicroseconds(10);
+//    delayMicroseconds(5);  //10
 
     shift_command_word(0x0000);
-    delayMicroseconds(10);
+//    delayMicroseconds(5);  //10
 }
 
 void write_to_display(uint8_t position, uint8_t ascii)

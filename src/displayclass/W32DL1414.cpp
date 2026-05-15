@@ -1,4 +1,5 @@
 #include "displayclass/W32DL1414.h"
+#include "shared/W32DL1414_prtcl.h"
 #include <Wire.h>
 #include <cstdarg>
 #include <cstdio>
@@ -155,7 +156,7 @@ void W32DL1414::print(const char* str)
         str += len;
     }
 }
-
+/*
 void W32DL1414::print(uint8_t position, const char* str)
 {
     if (!compatible || str == nullptr || position >= W32DL1414_DISPLAY_SIZE) {
@@ -164,6 +165,41 @@ void W32DL1414::print(uint8_t position, const char* str)
 
     cursor_position = position;
     print(str);
+}*/void W32DL1414::print(uint8_t position, const char* str)
+{
+    if (!compatible || str == nullptr) return;
+
+    size_t total_len = strlen(str);
+    size_t written = 0;
+    size_t current_pos = position;
+
+    const size_t safe_payload = 28;  // testweise konservativ
+
+    Serial.printf("[print] pos=%u total_len=%u\n", position, (unsigned)total_len);
+
+    while (written < total_len && current_pos < W32DL1414_DISPLAY_SIZE) {
+        size_t remaining = total_len - written;
+        size_t chunk_len = remaining < safe_payload ? remaining : safe_payload;
+
+        if (current_pos + chunk_len > W32DL1414_DISPLAY_SIZE) {
+            chunk_len = W32DL1414_DISPLAY_SIZE - current_pos;
+        }
+
+        Serial.printf("[print] cur=%u rem=%u chunk=%u\n",
+            (unsigned)current_pos,
+            (unsigned)remaining,
+            (unsigned)chunk_len);
+
+        if (chunk_len == 0) break;
+
+        if (!writeBuffer((uint8_t)current_pos, (const uint8_t*)(str + written), (uint8_t)chunk_len)) {
+            Serial.println("[print] writeBuffer failed");
+            return;
+        }
+
+        written += chunk_len;
+        current_pos += chunk_len;
+    }
 }
 
 void W32DL1414::printf(const char* format, ...)
@@ -172,7 +208,7 @@ void W32DL1414::printf(const char* format, ...)
         return;
     }
 
-    char buffer[96];
+    char buffer[W32DL1414_DISPLAY_SIZE + 1];
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer), format, args);
@@ -180,18 +216,32 @@ void W32DL1414::printf(const char* format, ...)
 
     print(buffer);
 }
-
+/*
 void W32DL1414::printf(uint8_t position, const char* format, ...)
 {
     if (!compatible || format == nullptr || position >= W32DL1414_DISPLAY_SIZE) {
         return;
     }
 
-    char buffer[96];
+    char buffer[W32DL1414_DISPLAY_SIZE + 1];
     va_list args;
     va_start(args, format);
     vsnprintf(buffer, sizeof(buffer), format, args);
     va_end(args);
+
+    print(position, buffer);
+}*/void W32DL1414::printf(uint8_t position, const char* format, ...)
+{
+    if (!compatible || format == nullptr) return;
+
+    char buffer[W32DL1414_DISPLAY_SIZE + 1];
+    va_list args;
+    va_start(args, format);
+    int needed = vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+
+    Serial.printf("[printf] needed=%d bufsize=%u\n", needed, (unsigned)sizeof(buffer));
+    if (needed < 0) return;
 
     print(position, buffer);
 }
@@ -279,15 +329,20 @@ bool W32DL1414::writeChar(uint8_t position, char ascii)
         return false;
     }
 
-    uint8_t input_buf[2] = { position, static_cast<uint8_t>(ascii) };
-    uint8_t output_buf[8] = {0};
-    uint8_t output_len = 0;
+    resetLastErrors();
 
-    if (!executeOpcode(W32DL1414_OPCODE_WRITE_CHAR, input_buf, 2, output_buf, &output_len)) {
+    Wire.beginTransmission(i2c_address);
+    Wire.write(W32DL1414_OPCODE_WRITE_CHAR);
+    Wire.write(position);
+    Wire.write((uint8_t)ascii);
+    _lastWireError = Wire.endTransmission(true);
+
+    if (_lastWireError != 0) {
+        _lastClientError = W32DL1414_CLIENT_WIRE_TX;
         return false;
     }
 
-    return output_len >= 1 && output_buf[0] == W32DL1414_RESULT_OK;
+    return parseSimpleResponse(1);
 }
 
 bool W32DL1414::writeBuffer(uint8_t position, const uint8_t* data, uint8_t len)
@@ -468,4 +523,63 @@ bool W32DL1414::executeOpcode(uint8_t opcode,
 
     *output_len = index;
     return index > 0;
+}
+
+bool W32DL1414::parseSimpleResponse(uint8_t expected_success_len)
+{
+    resetLastErrors();
+
+    const uint8_t requested_len = (expected_success_len < 2) ? 2 : expected_success_len;
+    const uint8_t n = Wire.requestFrom((int)i2c_address, (int)requested_len, (int)true);
+    _lastResponseLen = n;
+
+    if (n == 0) {
+        _lastClientError = W32DL1414_CLIENT_WIRE_RX_SHORT;
+        return false;
+    }
+
+    const int first = Wire.read();
+    if (first < 0) {
+        _lastClientError = W32DL1414_CLIENT_WIRE_RX_SHORT;
+        return false;
+    }
+
+    const uint8_t result = (uint8_t)first;
+
+    if (result == W32DL1414_RESULT_OK) {
+        while (Wire.available()) {
+            (void)Wire.read();
+        }
+        _lastClientError = W32DL1414_CLIENT_OK;
+        return true;
+    }
+
+    if (result == W32DL1414_RESULT_FAILED) {
+        if (!Wire.available()) {
+            _lastClientError = W32DL1414_CLIENT_INVALID_RESPONSE_LEN;
+            return false;
+        }
+
+        const int second = Wire.read();
+        if (second < 0) {
+            _lastClientError = W32DL1414_CLIENT_INVALID_RESPONSE_LEN;
+            return false;
+        }
+
+        _lastDeviceError = (uint8_t)second;
+
+        while (Wire.available()) {
+            (void)Wire.read();
+        }
+
+        _lastClientError = W32DL1414_CLIENT_DEVICE_ERROR;
+        return false;
+    }
+
+    while (Wire.available()) {
+        (void)Wire.read();
+    }
+
+    _lastClientError = W32DL1414_CLIENT_INVALID_RESULT;
+    return false;
 }

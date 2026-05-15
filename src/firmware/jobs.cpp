@@ -104,6 +104,24 @@ void jobs_execute_tick(void)
         return;
     }
 
-    const bool completed = handler->tick(state);
-    (void)completed;
+    uint8_t steps = (state->job.steps_per_tick == 0) ? 1 : state->job.steps_per_tick;
+    bool completed = false;
+
+    while (steps-- > 0 && engine_has_job()) {
+        completed = handler->tick(state);
+        if (completed) {
+            break;
+        }
+    }
+
+    if (!completed) {
+        return;
+    }
+
+    if (state->job.settle_ticks > 0) {
+        --state->job.settle_ticks;
+        return;
+    }
+
+    engine_finish_job(true, W32DL1414_ERROR_NONE);
 }

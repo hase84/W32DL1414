@@ -1,6 +1,8 @@
 #include "firmware/engine.h"
 
 static engine_state_t engine;
+static engine_state_t preserved_engine_state;
+
 
 static void reset_job_internal(void)
 {
@@ -41,6 +43,17 @@ engine_state_t* engine_get_state(void)
 {
     return &engine;
 }
+
+void engine_preserve_state_snapshot(void)
+{
+    preserved_engine_state = engine;
+}
+
+const engine_state_t* engine_get_preserved_state(void)
+{
+    return &preserved_engine_state;
+}
+
 
 void engine_set_ready(void)
 {
