@@ -1,5 +1,5 @@
 #pragma once
 
 #define FW_VER_MAJOR 0
-#define FW_VER_MINOR 2
-#define FW_VER_PATCH 9
+#define FW_VER_MINOR 3
+#define FW_VER_PATCH 0
