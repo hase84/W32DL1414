@@ -1,5 +1,3 @@
-#pragma once
-
 #include "firmware/jobs.h"
 #include "firmware/dispatch.h"
 
@@ -13,7 +11,7 @@
 #include "firmware/board.h"
 
 
-static bool job_tick_flush_vram(engine_state_t* state)
+bool job_tick_flush_vram(engine_state_t* state)
 {
     if (state == nullptr) {
         engine_finish_job(false, W32DL1414_ERROR_INTERNAL);
@@ -49,7 +47,7 @@ static bool job_tick_flush_vram(engine_state_t* state)
     return false;
 }
 
-static bool job_tick_clear_vram(engine_state_t* state)
+bool job_tick_clear_vram(engine_state_t* state)
 {
     if (state == nullptr) {
         engine_finish_job(false, W32DL1414_ERROR_INTERNAL);
@@ -86,6 +84,15 @@ static bool job_tick_clear_vram(engine_state_t* state)
     return false;
 }
 
+
+bool job_tick_scroll_vram(engine_state_t* state)
+{
+    (void)state;
+    engine_finish_job(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
+    return true;
+}
+
+
 void jobs_execute_tick(void)
 {
     engine_state_t* state = engine_get_state();
@@ -98,8 +105,8 @@ void jobs_execute_tick(void)
         return;
     }
 
-    const job_handler_entry_t* handler = find_job_handler(state->job.type);
-    if (handler == nullptr || handler->tick == nullptr) {
+    job_handler_entry_t handler;
+    if (!find_job_handler(state->job.type, &handler) || handler.tick == nullptr) {
         engine_finish_job(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
         return;
     }
@@ -108,7 +115,7 @@ void jobs_execute_tick(void)
     bool completed = false;
 
     while (steps-- > 0 && engine_has_job()) {
-        completed = handler->tick(state);
+        completed = handler.tick(state);
         if (completed) {
             break;
         }

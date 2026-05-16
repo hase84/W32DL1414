@@ -14,5 +14,6 @@ struct job_handler_entry_t {
 
 bool job_tick_flush_vram(engine_state_t* state);
 bool job_tick_clear_vram(engine_state_t* state);
+bool job_tick_scroll_vram(engine_state_t* state);
 
 

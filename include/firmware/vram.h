@@ -14,3 +14,4 @@ void vram_set_dirty(uint8_t position);
 void vram_clear_dirty(uint8_t position);
 void vram_write(uint8_t position, uint8_t ascii);
 uint8_t vram_read(uint8_t position);
+uint8_t vram_read_ascii(uint8_t position);

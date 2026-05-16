@@ -384,11 +384,14 @@ bool W32DL1414::writeBuffer(uint8_t position, const uint8_t* data, uint8_t len)
     return waitUntilIdle(15000);
 }
 
-/*
-// funktionierender stand
-bool W32DL1414::writeBuffer(uint8_t position, const uint8_t* data, uint8_t len)
+
+bool W32DL1414::readBuf(uint8_t position, uint8_t* data, uint8_t len)
 {
     if (!compatible || data == nullptr || len == 0) {
+        return false;
+    }
+
+    if (len > W32DL1414_MAX_READ_BUF_LEN) {
         return false;
     }
 
@@ -400,26 +403,34 @@ bool W32DL1414::writeBuffer(uint8_t position, const uint8_t* data, uint8_t len)
         return false;
     }
 
-    if ((uint8_t)(2 + len) > W32DL1414_MAX_TRANSFER_LEN) {
-        return false;
-    }
-
-    uint8_t input_buf[W32DL1414_MAX_TRANSFER_LEN] = {0};
-    input_buf[0] = position;
-    input_buf[1] = len;
-    for (uint8_t i = 0; i < len; ++i) {
-        input_buf[2 + i] = data[i];
-    }
-
-    uint8_t output_buf[8] = {0};
+    uint8_t input_buf[2] = { position, len };
+    uint8_t output_buf[W32DL1414_MAX_TRANSFER_LEN] = {0};
     uint8_t output_len = 0;
 
-    if (!executeOpcode(W32DL1414_OPCODE_WRITE_BUF, input_buf, (uint8_t)(2 + len), output_buf, &output_len)) {
+    if (!executeOpcode(W32DL1414_OPCODE_READ_BUF, input_buf, 2, output_buf, &output_len, (uint8_t)(2 + len))) {
         return false;
     }
 
-    return output_len >= 1 && output_buf[0] == W32DL1414_RESULT_OK;
-}*/
+    if (output_len < 2 || output_buf[0] != W32DL1414_RESULT_OK) {
+        return false;
+    }
+
+    if (output_buf[1] != len) {
+        return false;
+    }
+
+    if ((uint8_t)(2 + len) > output_len) {
+        return false;
+    }
+
+    for (uint8_t i = 0; i < len; ++i) {
+        data[i] = output_buf[2 + i];
+    }
+
+    return true;
+}
+
+
 
 bool W32DL1414::waitUntilIdle(uint16_t timeout_ms)
 {
@@ -476,6 +487,7 @@ bool W32DL1414::executeOpcode(uint8_t opcode,
                               uint8_t input_len,
                               uint8_t* output_buf,
                               uint8_t* output_len,
+                              uint8_t request_len,
                               uint16_t timeout_ms)
 {
     if (output_len == nullptr) {
@@ -506,7 +518,6 @@ bool W32DL1414::executeOpcode(uint8_t opcode,
 
     delay(1);
 
-    constexpr uint8_t request_len = 8;
     Wire.requestFrom((int)i2c_address, (int)request_len, (int)true);
 
     if (output_buf == nullptr) {

@@ -2,6 +2,8 @@
 
 #include <string.h>
 
+
+
 uint8_t vram[W32DL1414_DISPLAY_SIZE];
 uint8_t vram_dirty_flags[W32DL1414_DISPLAY_SIZE / 8];
 
@@ -62,9 +64,10 @@ void vram_write(uint8_t position, uint8_t ascii)
 
 uint8_t vram_read(uint8_t position)
 {
-    if (position >= W32DL1414_DISPLAY_SIZE) {
-        return W32DL1414_FILL_CHAR;
-    }
-
     return vram[position];
+}
+
+uint8_t vram_read_ascii(uint8_t position)
+{
+    return vram[position] & 0x7F;
 }

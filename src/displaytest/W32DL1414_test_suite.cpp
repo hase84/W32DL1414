@@ -892,6 +892,61 @@ bool action_status(TestReport& r) {
     return true;
 }
 
+bool action_read_buf_dump(TestReport& r)
+{
+    if (!prepare_display_test("read_buf_dump")) {
+        capture_fail_snapshot(r);
+        snprintf(r.note, sizeof(r.note), "prepare failed");
+        add_check_bool(r, "prepare", true, false);
+        return false;
+    }
+
+    const uint8_t row_len = 32;
+    const uint8_t chunk_len = 16;
+    uint8_t buf[row_len];
+
+    Serial.println();
+    Serial.println("=== VRAM BUF DUMP ===");
+
+    for (uint8_t row = 0; row < 4; ++row) {
+        const uint8_t start = (uint8_t)(row * row_len);
+
+        for (uint8_t chunk = 0; chunk < 2; ++chunk) {
+            const uint8_t chunk_start = (uint8_t)(start + chunk * chunk_len);
+
+            if (!display.readBuf(chunk_start, &buf[chunk * chunk_len], chunk_len)) {
+                capture_fail_snapshot(r);
+                add_check_bool(r, "readBuf", true, false);
+                snprintf(r.note, sizeof(r.note), "readBuf row=%u chunk=%u failed", row, chunk);
+                return false;
+            }
+        }
+
+        char ascii[row_len + 1];
+        char dirty[row_len + 1];
+
+        for (uint8_t i = 0; i < row_len; ++i) {
+            const uint8_t raw = buf[i];
+            const uint8_t ch = (uint8_t)(raw & 0x7F);
+
+            ascii[i] = (ch >= 32 && ch <= 126) ? (char)ch : '.';
+            dirty[i] = (raw & 0x80) ? 'D' : '.';
+        }
+
+        ascii[row_len] = '\0';
+        dirty[row_len] = '\0';
+
+        Serial.printf("ROW %u (%3u-%3u)\n", row, start, (uint8_t)(start + row_len - 1));
+        Serial.printf("  TXT : %s\n", ascii);
+        Serial.printf("  DIR : %s\n", dirty);
+    }
+
+    add_check_bool(r, "readBufDump", true, true);
+    snprintf(r.note, sizeof(r.note), "readBuf dump ok");
+    return true;
+}
+
+
 TestSpec tests[] = {
     {'1', "begin",       true,  action_begin},
     {'2', "ping",        true,  action_ping},
@@ -917,7 +972,8 @@ TestSpec tests[] = {
     {'o', "scroll_mode",         true,  action_scroll_mode},
     {'d', "read_dip",            true,  action_read_dip},
     {'y', "soft_reset",          false, action_soft_reset},
-    {'x', "hard_reset",          false, action_hard_reset}
+    {'x', "hard_reset",          false, action_hard_reset},
+    {'z', "read_buf_dump",       false, action_read_buf_dump}
 };
 
 const TestSpec* find_test_by_key(char k) {
@@ -975,6 +1031,7 @@ void print_help()
     Serial.println("   f  printf + flush");
     Serial.println("   l  long printf + flush");
     Serial.println("   k  fill + flush + clear");
+    Serial.println("   z  readBuf dump");
     Serial.println("   t  cycle clear chars");
     Serial.println();
 

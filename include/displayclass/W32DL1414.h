@@ -2,6 +2,7 @@
 
 #include <Arduino.h>
 #include <Wire.h>
+#include <cstdint>
 #include "../shared/W32DL1414_prtcl.h"
 
 struct W32DL1414SystemInfo
@@ -73,6 +74,7 @@ public:
 
     bool writeChar(uint8_t position, char ascii);
     bool writeBuffer(uint8_t position, const uint8_t* data, uint8_t len);
+    bool readBuf(uint8_t position, uint8_t* data, uint8_t len);
 
     bool waitUntilIdle(uint16_t timeout_ms = 8000);
     bool isBusy() const;
@@ -107,6 +109,7 @@ private:
                        uint8_t input_len,
                        uint8_t* output_buf,
                        uint8_t* output_len,
+                       uint8_t request_len = 8,
                        uint16_t timeout_ms = 20);
 
     bool pollJobStatus(uint16_t timeout_ms);

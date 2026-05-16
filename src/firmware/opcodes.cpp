@@ -170,7 +170,7 @@ void opcode_handle_write_buf(volatile uint8_t input_len, const uint8_t* input_bu
     }
 
     // for the time being, do not allow writes that exceed display size; later either trucate or scroll in
-    if ((uint16_t)start + (uint16_t)len > W32DL1414_DISPLAY_SIZE) {
+    if (start + len > W32DL1414_DISPLAY_SIZE) {
         engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_OUT_OF_RANGE);
         engine_finish_operation(false, W32DL1414_ERROR_OUT_OF_RANGE);
         return;
@@ -181,6 +181,42 @@ void opcode_handle_write_buf(volatile uint8_t input_len, const uint8_t* input_bu
     }
 
     engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
+}
+
+
+void opcode_handle_read_buf(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf)
+{
+    engine_start_operation(W32DL1414_OPCODE_READ_BUF);
+
+    input_reader_t in;
+    input_reader_init(&in, input_buf, input_len);
+    input_skip_opcode(&in);
+
+    uint8_t start = get_input_u8(&in);
+    uint8_t len = get_input_u8(&in);
+
+
+    if (len == 0) {
+        engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_INVALID_ARGUMENT);
+        engine_finish_operation(false, W32DL1414_ERROR_INVALID_ARGUMENT);
+        return;
+    }
+
+    if (start >= W32DL1414_DISPLAY_SIZE || start + len > W32DL1414_DISPLAY_SIZE) {
+        engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_OUT_OF_RANGE);
+        engine_finish_operation(false, W32DL1414_ERROR_OUT_OF_RANGE);
+        return;
+    }
+
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    
+    engine_response_push_u8(output_len, output_buf, len);
+
+    for (uint8_t i = 0; i < len; ++i) {
+        engine_response_push_u8(output_len, output_buf, vram_read(start + i));
+    }
+
     engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }
 

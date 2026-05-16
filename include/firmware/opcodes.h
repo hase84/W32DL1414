@@ -2,6 +2,8 @@
 
 #include <stdint.h>
 
+
+
 typedef void (*opcode_handler_fn)(volatile uint8_t input_len,
                                   const uint8_t* input_buf,
                                   uint8_t* output_len,
@@ -18,6 +20,7 @@ struct opcode_handler_entry_t {
 #define OPCODE_FLAG_NONE               0x00
 #define OPCODE_FLAG_ALLOWED_DURING_JOB 0x01
 
+
 void opcode_handle_ping(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_get_version(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_get_status(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
@@ -26,7 +29,7 @@ void opcode_handle_flush(volatile uint8_t input_len, const uint8_t* input_buf, u
 void opcode_handle_clear(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_write_char(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_write_buf(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
-
+void opcode_handle_read_buf(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_set_cursor_enable(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_get_cursor_enable(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);
 void opcode_handle_set_cursor_visible(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf);

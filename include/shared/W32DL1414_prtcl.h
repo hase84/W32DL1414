@@ -10,6 +10,7 @@
  * ========================================================= */
 #define W32DL1414_MAX_TRANSFER_LEN                     32
 #define W32DL1414_MAX_RESPONSE_LEN                     32
+#define W32DL1414_MAX_READ_BUF_LEN                     (W32DL1414_MAX_RESPONSE_LEN - 2)
 
 
 /* =========================================================
@@ -23,6 +24,7 @@
 #define W32DL1414_OPCODE_WRITE_BUF                     0x21
 #define W32DL1414_OPCODE_FLUSH                         0x22
 #define W32DL1414_OPCODE_CLEAR                         0x23
+#define W32DL1414_OPCODE_READ_BUF                      0x24
 
 #define W32DL1414_OPCODE_SET_CURSOR_ENABLE             0x42
 #define W32DL1414_OPCODE_GET_CURSOR_ENABLE             0x43
@@ -87,9 +89,7 @@
 #define W32DL1414_JOB_TYPE_NONE                       0x00
 #define W32DL1414_JOB_TYPE_FLUSH_VRAM                 0x01
 #define W32DL1414_JOB_TYPE_CLEAR_VRAM                 0x02
-#define W32DL1414_JOB_TYPE_SCROLL_LEFT                0x03
-#define W32DL1414_JOB_TYPE_SCROLL_RIGHT               0x04
-#define W32DL1414_JOB_TYPE_WRITE_BUFFER               0x05
+#define W32DL1414_JOB_TYPE_SCROLL_VRAM                0x03
 
 
 /* =========================================================
