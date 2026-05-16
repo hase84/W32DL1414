@@ -61,5 +61,7 @@
 
 uint16_t sys_calc_free_ram_bytes(void);
 void write_to_display(uint8_t position, uint8_t ascii);
+void schedule_hardware_reset(uint8_t timeout_ms);
+uint8_t read_dip_switches(void);
 
 

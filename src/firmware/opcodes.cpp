@@ -1,3 +1,4 @@
+
 #include "firmware/version.h"
 #include "firmware/opcodes.h"
 #include "firmware/board.h"
@@ -6,6 +7,8 @@
 #include "firmware/input_reader.h"
 #include "shared/W32DL1414_prtcl.h"
 #include <stdint.h>
+#include <avr/wdt.h>
+
 
 #ifndef FW_VER_MAJOR
 #define FW_VER_MAJOR 0
@@ -316,13 +319,19 @@ void opcode_handle_get_scroll_mode(volatile uint8_t input_len, const uint8_t *in
     engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
     engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
 }
+
+
 void opcode_handle_soft_reset(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
 {
     (void)input_len;
     (void)input_buf;
+
     engine_start_operation(W32DL1414_OPCODE_SOFT_RESET);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
+
+    engine_reset();
+
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }
 
 
@@ -330,9 +339,13 @@ void opcode_handle_hard_reset(volatile uint8_t input_len, const uint8_t* input_b
 {
     (void)input_len;
     (void)input_buf;
+
     engine_start_operation(W32DL1414_OPCODE_HARD_RESET);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
+
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
+
+    schedule_hardware_reset(WDTO_15MS);
 }
 
 
@@ -340,7 +353,12 @@ void opcode_handle_read_dip(volatile uint8_t input_len, const uint8_t* input_buf
 {
     (void)input_len;
     (void)input_buf;
+
     engine_start_operation(W32DL1414_OPCODE_READ_DIP);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
+
+    uint8_t dip = read_dip_switches();
+
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_response_push_u8(output_len, output_buf, dip);
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }

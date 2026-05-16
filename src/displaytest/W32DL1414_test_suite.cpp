@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include <Wire.h>
 #include "displayclass/W32DL1414.h"
+#include "shared/W32DL1414_prtcl.h"
 
 #define USE_PLAIN_ASCII 1
 
@@ -129,7 +130,8 @@ bool wait_stable_idle(uint16_t timeout_ms = 8000, uint16_t settle_ms = 20) {
     if (!display.waitUntilIdle(timeout_ms)) return false;
     delay(settle_ms);
     W32DL1414RawStatus st = display.getStatusRaw();
-    return st.job_status == 3 && st.operation_status == 2 && st.error_code == 0x00;
+    return (st.job_status == W32DL1414_JOB_STATUS_DONE || st.job_status == W32DL1414_JOB_STATUS_NONE) 
+        && st.operation_status == W32DL1414_OPERATION_STATUS_OK && st.error_code == W32DL1414_ERROR_NONE;
 }
 
 bool prepare_display_test(const char* name) {
@@ -811,19 +813,33 @@ bool action_scroll_mode(TestReport& r) {
     return actual == expected;
 }
 
-bool action_read_dip(TestReport& r) {
+bool action_read_dip(TestReport& r)
+{
     uint8_t dip = 0xFF;
     bool ok = display.readDip(&dip);
-    if (!ok) {
-        capture_fail_snapshot(r);
-        add_check_bool(r, "readDip", true, false);
-        snprintf(r.note, sizeof(r.note), "readDip() failed");
-        return false;
+
+    Serial.printf(
+        "readDip=%s dip=0x%02X client=%u(%s) wire=%u resp=%u dev=0x%02X\n",
+        ok ? "true" : "false",
+        dip,
+        display.getLastClientError(),
+        w32dl1414_client_error_text(display.getLastClientError()),
+        display.getLastWireError(),
+        display.getLastResponseLen(),
+        display.getLastDeviceError()
+    );
+
+    add_check_bool(r, "readDip", true, ok);
+    if (ok)
+    {
+        add_check_range_i(r, "dip.range", 0, 7, dip);
+        snprintf(r.note, sizeof(r.note), "dip=0x%02X", dip);
+        return true;
     }
 
-    add_check_range_i(r, "dip", 0, 255, dip);
-    snprintf(r.note, sizeof(r.note), "dip=0x%02X", dip);
-    return true;
+    capture_fail_snapshot(r);
+    snprintf(r.note, sizeof(r.note), "readDip() failed");
+    return false;
 }
 
 bool action_soft_reset(TestReport& r) {

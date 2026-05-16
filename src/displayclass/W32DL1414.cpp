@@ -585,113 +585,200 @@ bool W32DL1414::parseSimpleResponse(uint8_t expected_success_len)
 }
 
 
-    bool W32DL1414::setCursorEnable(bool value) 
-    {
-        resetLastErrors();
+bool W32DL1414::setCursorEnable(bool value) 
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::getCursorEnable(bool* value)
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::setCursorVisible(bool value)
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::getCursorVisible(bool* value)
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::setCursorPos(uint8_t pos)
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::getCursorPos(uint8_t* pos)
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::setCursorChar(char c)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::getCursorChar(char* c)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::setCursorBlink10ms(uint8_t value)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::getCursorBlink10ms(uint8_t* value)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::setRefreshMode(uint8_t mode)
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::getRefreshMode(uint8_t* mode)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::setScrollMode(uint8_t mode)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::getScrollMode(uint8_t* mode)
+{
+    resetLastErrors();
+    return false;
+}
+
+
+bool W32DL1414::softReset() 
+{
+    resetLastErrors();
+    return false;
+}
+
+bool W32DL1414::hardReset()
+{
+    if (!compatible) {
         return false;
     }
 
+    resetLastErrors();
 
-    bool W32DL1414::getCursorEnable(bool* value)
-    {
-        resetLastErrors();
+    uint8_t output_buf[8] = {0};
+    uint8_t output_len = 0;
+
+    if (!executeOpcode(W32DL1414_OPCODE_HARD_RESET,
+                       nullptr,
+                       0,
+                       output_buf,
+                       &output_len)) {
+        // Kein oder kaputter Response-Frame
+        _lastClientError = W32DL1414_CLIENT_WIRE_RX_SHORT;
+        _lastResponseLen = output_len;
         return false;
     }
 
-    bool W32DL1414::setCursorVisible(bool value)
-    {
-        resetLastErrors();
+    _lastResponseLen = output_len;
+
+    if (output_len < 1) {
+        _lastClientError = W32DL1414_CLIENT_WIRE_RX_SHORT;
         return false;
     }
 
-    bool W32DL1414::getCursorVisible(bool* value)
-    {
-        resetLastErrors();
+    if (output_buf[0] == W32DL1414_RESULT_FAILED) {
+        // Gerät sagt: Operation fehlgeschlagen, Fehlercode im zweiten Byte (falls vorhanden)
+        _lastClientError = W32DL1414_CLIENT_DEVICE_ERROR;
+        if (output_len >= 2) {
+            _lastDeviceError = output_buf[1];
+        }
         return false;
     }
 
-    bool W32DL1414::setCursorPos(uint8_t pos)
-    {
-        resetLastErrors();
+    if (output_buf[0] != W32DL1414_RESULT_OK) {
+        _lastClientError = W32DL1414_CLIENT_INVALID_RESULT;
         return false;
     }
 
-    bool W32DL1414::getCursorPos(uint8_t* pos)
+    _lastClientError = W32DL1414_CLIENT_OK;
+    return true;
+}
+
+
+
+bool W32DL1414::readDip(uint8_t* value)
+{
+    if (!compatible || value == nullptr)
     {
-        resetLastErrors();
         return false;
     }
 
-    bool W32DL1414::setCursorChar(char c)
+    resetLastErrors();
+
+    uint8_t output_buf[8] = {0};
+    uint8_t output_len = 0;
+
+    if (!executeOpcode(W32DL1414_OPCODE_READ_DIP, nullptr, 0, output_buf, &output_len))
     {
-        resetLastErrors();
+        _lastClientError = W32DL1414_CLIENT_WIRE_RX_SHORT;
+        _lastResponseLen = output_len;
         return false;
     }
 
+    _lastResponseLen = output_len;
 
-    bool W32DL1414::getCursorChar(char* c)
+    if (output_len < 1)
     {
-        resetLastErrors();
+        _lastClientError = W32DL1414_CLIENT_WIRE_RX_SHORT;
         return false;
     }
 
-
-    bool W32DL1414::setCursorBlink10ms(uint8_t value)
+    if (output_buf[0] == W32DL1414_RESULT_FAILED)
     {
-        resetLastErrors();
+        _lastClientError = W32DL1414_CLIENT_DEVICE_ERROR;
+        _lastDeviceError = (output_len >= 2) ? output_buf[1] : 0x00;
         return false;
     }
 
-
-    bool W32DL1414::getCursorBlink10ms(uint8_t* value)
+    if (output_buf[0] != W32DL1414_RESULT_OK)
     {
-        resetLastErrors();
+        _lastClientError = W32DL1414_CLIENT_INVALID_RESULT;
         return false;
     }
 
-
-    bool W32DL1414::setRefreshMode(uint8_t mode)
+    if (output_len < 2)
     {
-        resetLastErrors();
+        _lastClientError = W32DL1414_CLIENT_INVALID_RESPONSE_LEN;
         return false;
     }
 
-    bool W32DL1414::getRefreshMode(uint8_t* mode)
-    {
-        resetLastErrors();
-        return false;
-    }
-
-
-    bool W32DL1414::setScrollMode(uint8_t mode)
-    {
-        resetLastErrors();
-        return false;
-    }
-
-
-    bool W32DL1414::getScrollMode(uint8_t* mode)
-    {
-        resetLastErrors();
-        return false;
-    }
-
-
-    bool W32DL1414::softReset() 
-    {
-        resetLastErrors();
-        return false;
-    }
-
-    bool W32DL1414::hardReset()
-    {
-        resetLastErrors();
-        return false;
-    }
-
-
-    bool W32DL1414::readDip(uint8_t* value)
-    {
-        resetLastErrors();
-        return false;
-    }
+    *value = output_buf[1];
+    _lastClientError = W32DL1414_CLIENT_OK;
+    return true;
+}
