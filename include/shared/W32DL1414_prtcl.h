@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 /* =========================================================
  * display geometry
  * ========================================================= */
@@ -8,6 +10,7 @@
 /* =========================================================
  * protocol limits
  * ========================================================= */
+#define W32DL1414_I2C_BASE_ADDRESS                     0x40
 #define W32DL1414_MAX_TRANSFER_LEN                     32
 #define W32DL1414_MAX_RESPONSE_LEN                     32
 #define W32DL1414_MAX_READ_BUF_LEN                     (W32DL1414_MAX_RESPONSE_LEN - 2)
@@ -26,21 +29,11 @@
 #define W32DL1414_OPCODE_CLEAR                         0x23
 #define W32DL1414_OPCODE_READ_BUF                      0x24
 
-#define W32DL1414_OPCODE_SET_CURSOR_ENABLE             0x42
-#define W32DL1414_OPCODE_GET_CURSOR_ENABLE             0x43
-#define W32DL1414_OPCODE_SET_CURSOR_VISIBLE            0x44
-#define W32DL1414_OPCODE_GET_CURSOR_VISIBLE            0x45
-#define W32DL1414_OPCODE_SET_CURSOR_POS                0x46
-#define W32DL1414_OPCODE_GET_CURSOR_POS                0x47
-#define W32DL1414_OPCODE_SET_CURSOR_CHAR               0x48
-#define W32DL1414_OPCODE_GET_CURSOR_CHAR               0x49
-#define W32DL1414_OPCODE_SET_CURSOR_BLINK_FREQ         0x4A
-#define W32DL1414_OPCODE_GET_CURSOR_BLINK_FREQ         0x4B
+#define W32DL1414_OPCODE_SET_DISPLAY_CONFIG            0x40
+#define W32DL1414_OPCODE_GET_DISPLAY_CONFIG            0x41
 
-#define W32DL1414_OPCODE_SET_REFRESH_MODE              0x60
-#define W32DL1414_OPCODE_GET_REFRESH_MODE              0x61
-#define W32DL1414_OPCODE_SET_SCROLL_MODE               0x62
-#define W32DL1414_OPCODE_GET_SCROLL_MODE               0x63
+#define W32DL1414_OPCODE_SET_CURSOR_CONFIG             0x50
+#define W32DL1414_OPCODE_GET_CURSOR_CONFIG             0x51
 
 #define W32DL1414_OPCODE_GET_SYSTEM_INFO               0x80
 #define W32DL1414_OPCODE_SOFT_RESET                    0x81
@@ -108,11 +101,22 @@
 #define W32DL1414_BOARD_ID_ATTINY44                   0x01
 #define W32DL1414_BOARD_ID_ATTINY84                   0x02
 
+/* =========================================================
+ * write flags for write operations
+ * =========================================================
+ */
+#define W32DL1414_WRITE_FLAG_NONE       0x00
+#define W32DL1414_WRITE_FLAG_TRUNCATED  0x01
+#define W32DL1414_WRITE_FLAG_SCROLLED   0x02
+#define W32DL1414_WRITE_FLAG_FLIPPED    0x04
+
 
 /* =========================================================
  * cursor / text control
  * ========================================================= */
 #define W32DL1414_CURSOR_INVALID                      0xFF
+#define W32DL1414_CURSOR_CHAR_DEFAULT                 '_'
+#define W32DL1414_CURSOR_BLINK_FREQ_DEFAULT           20 // in units of 10ms
 #define W32DL1414_FILL_CHAR                           0x20
 #define W32DL1414_ASCII_TAB                           0x09
 #define W32DL1414_ASCII_LF                            0x0A
@@ -121,12 +125,56 @@
 /* =========================================================
  * DISPLAY REFRESH MODES / AUTO vs MANUAL FLUSH
  * ========================================================= */
-#define W32DL1414_REFRESH_MODE_AUTO                    0x00
-#define W32DL1414_REFRESH_MODE_MANUAL                  0x01
+#define W32DL1414_REFRESH_MODE_INVALID                 0x00
+#define W32DL1414_REFRESH_MODE_AUTO                    0x01
+#define W32DL1414_REFRESH_MODE_MANUAL                  0x02
 
 /* =========================================================
- * SCROLL MODES
+ * INSERT MODES
  * ========================================================= */
-#define W32DL1414_SCROLL_MODE_OFF                      0x00
-#define W32DL1414_SCROLL_MODE_LEFT                     0x01
-#define W32DL1414_SCROLL_MODE_UP                       0x02
+#define W32DL1414_INSERT_MODE_INVALID      0x00
+#define W32DL1414_INSERT_MODE_SCROLL_LEFT  0x01
+#define W32DL1414_INSERT_MODE_SCROLL_UP    0x02
+#define W32DL1414_INSERT_MODE_TRUNCATE     0x03
+#define W32DL1414_INSERT_MODE_FLIP_OVER    0x04
+
+
+/*
+ * DISPLAY CONFIGURATION MASKS
+ */
+#define W32DL1414_DISPLAY_CONFIG_MASK_REFRESH_MODE   0x01
+#define W32DL1414_DISPLAY_CONFIG_MASK_INSERT_MODE    0x02
+#define W32DL1414_DISPLAY_CONFIG_MASK_ALL            (W32DL1414_DISPLAY_CONFIG_MASK_REFRESH_MODE | \
+                                                      W32DL1414_DISPLAY_CONFIG_MASK_INSERT_MODE)
+
+
+/*
+ * CURSOR CONFIGURATION MASKS
+ */
+#define W32DL1414_CURSOR_CONFIG_MASK_ENABLED         0x01
+#define W32DL1414_CURSOR_CONFIG_MASK_VISIBLE         0x02
+#define W32DL1414_CURSOR_CONFIG_MASK_POS             0x04
+#define W32DL1414_CURSOR_CONFIG_MASK_CHAR            0x08
+#define W32DL1414_CURSOR_CONFIG_MASK_BLINK_10MS      0x10
+#define W32DL1414_CURSOR_CONFIG_MASK_END_OF_DISPLAY  0x20
+#define W32DL1414_CURSOR_CONFIG_MASK_ALL             (W32DL1414_CURSOR_CONFIG_MASK_ENABLED | \
+                                                      W32DL1414_CURSOR_CONFIG_MASK_VISIBLE | \
+                                                      W32DL1414_CURSOR_CONFIG_MASK_POS | \
+                                                      W32DL1414_CURSOR_CONFIG_MASK_CHAR | \
+                                                      W32DL1414_CURSOR_CONFIG_MASK_BLINK_10MS | \
+                                                      W32DL1414_CURSOR_CONFIG_MASK_END_OF_DISPLAY)
+
+
+struct W32DL1414_cursor_config {
+    bool enabled = 0;
+    bool visible = 0;
+    uint8_t pos = 0;
+    uint8_t cursor_char = W32DL1414_CURSOR_CHAR_DEFAULT;
+    uint8_t blink_10ms = W32DL1414_CURSOR_BLINK_FREQ_DEFAULT;
+    bool end_of_display = false;
+};
+
+struct W32DL1414_display_config {
+    uint8_t refresh_mode = W32DL1414_REFRESH_MODE_AUTO;
+    uint8_t insert_mode = W32DL1414_INSERT_MODE_SCROLL_LEFT;
+};

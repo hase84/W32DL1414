@@ -22,6 +22,53 @@
 #define FW_VER_PATCH 0
 #endif
 
+
+/*
+ * Helper functions for opcode handlers to build responses in a consistent way.
+ */
+static void response_begin_fail(uint8_t* output_len, uint8_t* output_buf, uint8_t error_code)
+{
+    engine_response_begin(output_len, output_buf, false, error_code);
+}
+
+static void response_begin_ok_data(uint8_t* output_len, uint8_t* output_buf, uint8_t count)
+{
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_response_push_u8(output_len, output_buf, count);
+}
+
+static void response_begin_ok_mutation(uint8_t* output_len, uint8_t* output_buf, uint8_t requested, uint8_t processed, uint8_t changed, uint8_t flags)
+{
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_response_push_u8(output_len, output_buf, requested);
+    engine_response_push_u8(output_len, output_buf, processed);
+    engine_response_push_u8(output_len, output_buf, changed);
+    engine_response_push_u8(output_len, output_buf, flags);
+}
+
+
+/*
+ * Validation helper functions for opcode handlers.
+ */
+static bool is_valid_refresh_mode(uint8_t value)
+{
+    return value == W32DL1414_REFRESH_MODE_AUTO ||
+           value == W32DL1414_REFRESH_MODE_MANUAL;
+}
+
+static bool is_valid_insert_mode(uint8_t value)
+{
+    return value == W32DL1414_INSERT_MODE_SCROLL_LEFT ||
+           value == W32DL1414_INSERT_MODE_SCROLL_UP ||
+           value == W32DL1414_INSERT_MODE_TRUNCATE ||
+           value == W32DL1414_INSERT_MODE_FLIP_OVER;
+}
+
+/*
+ *
+ * Opcode handlers
+ */
+
 void opcode_handle_ping(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf)
 {
     (void)input_len;
@@ -140,14 +187,20 @@ void opcode_handle_write_char(volatile uint8_t input_len, const uint8_t* input_b
     const uint8_t ascii = get_input_u8(&in);
 
     if (position >= W32DL1414_DISPLAY_SIZE) {
-        engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_OUT_OF_RANGE);
+        response_begin_fail(output_len, output_buf, W32DL1414_ERROR_OUT_OF_RANGE);
         engine_finish_operation(false, W32DL1414_ERROR_OUT_OF_RANGE);
         return;
     }
 
-    vram_write(position, ascii);
+    const bool changed = vram_write(position, ascii);
 
-    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    response_begin_ok_mutation(output_len,
+                               output_buf,
+                               1,                                      // requested
+                               1,                                      // processed
+                               changed ? 1 : 0,                        // changed
+                               W32DL1414_WRITE_FLAG_NONE);             // flags
+
     engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }
 
@@ -222,140 +275,164 @@ void opcode_handle_read_buf(volatile uint8_t input_len, const uint8_t* input_buf
 
 
 
-void opcode_handle_set_cursor_enable(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
+void opcode_handle_set_display_config(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf)
 {
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_CURSOR_ENABLE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
+    engine_start_operation(W32DL1414_OPCODE_SET_DISPLAY_CONFIG);
+
+    input_reader_t in;
+    input_reader_init(&in, input_buf, input_len);
+    input_skip_opcode(&in);
+
+    struct W32DL1414_display_config cfg;
+    vram_get_display_config(&cfg);
+
+    const uint8_t mask = get_input_u8(&in);
+    const uint8_t refresh_mode = get_input_u8(&in);
+    const uint8_t insert_mode = get_input_u8(&in);
+
+    if ((mask & W32DL1414_DISPLAY_CONFIG_MASK_REFRESH_MODE) != 0U) {
+        if (!is_valid_refresh_mode(refresh_mode)) {
+            response_begin_fail(output_len, output_buf, W32DL1414_ERROR_INVALID_ARGUMENT);
+            engine_finish_operation(false, W32DL1414_ERROR_INVALID_ARGUMENT);
+            return;
+        }
+        cfg.refresh_mode = refresh_mode;
+    }
+
+    if ((mask & W32DL1414_DISPLAY_CONFIG_MASK_INSERT_MODE) != 0U) {
+        if (!is_valid_insert_mode(insert_mode)) {
+            response_begin_fail(output_len, output_buf, W32DL1414_ERROR_INVALID_ARGUMENT);
+            engine_finish_operation(false, W32DL1414_ERROR_INVALID_ARGUMENT);
+            return;
+        }
+        cfg.insert_mode = insert_mode;
+    }
+
+    if (!vram_set_display_config(&cfg)) {
+        response_begin_fail(output_len, output_buf, W32DL1414_ERROR_INTERNAL);
+        engine_finish_operation(false, W32DL1414_ERROR_INTERNAL);
+        return;
+    }
+
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }
 
 
-void opcode_handle_get_cursor_enable(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
+void opcode_handle_get_display_config(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf)
 {
     (void)input_len;
     (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_CURSOR_ENABLE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
 
+    engine_start_operation(W32DL1414_OPCODE_GET_DISPLAY_CONFIG);
+
+    struct W32DL1414_display_config cfg;
+    vram_get_display_config(&cfg);
+
+    response_begin_ok_data(output_len, output_buf, 3);
+    engine_response_push_u8(output_len, output_buf,
+        W32DL1414_DISPLAY_CONFIG_MASK_REFRESH_MODE |
+        W32DL1414_DISPLAY_CONFIG_MASK_INSERT_MODE);
+    engine_response_push_u8(output_len, output_buf, cfg.refresh_mode);
+    engine_response_push_u8(output_len, output_buf, cfg.insert_mode);
+
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }
 
 
-void opcode_handle_set_cursor_visible(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
+void opcode_handle_set_cursor_config(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf)
+{
+    engine_start_operation(W32DL1414_OPCODE_SET_CURSOR_CONFIG);
+
+    input_reader_t in;
+    input_reader_init(&in, input_buf, input_len);
+    input_skip_opcode(&in);
+
+    struct W32DL1414_cursor_config cfg;
+    vram_get_cursor_config(&cfg);
+
+    const uint8_t mask = get_input_u8(&in);
+    const uint8_t enabled_raw = get_input_u8(&in);
+    const uint8_t visible_raw = get_input_u8(&in);
+    const uint8_t pos_raw = get_input_u8(&in);
+    const uint8_t char_raw = get_input_u8(&in);
+    const uint8_t blink_raw = get_input_u8(&in);
+    const uint8_t eod_raw = get_input_u8(&in);
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_POS) != 0U) {
+        if (pos_raw >= W32DL1414_DISPLAY_SIZE) {
+            response_begin_fail(output_len, output_buf, W32DL1414_ERROR_OUT_OF_RANGE);
+            engine_finish_operation(false, W32DL1414_ERROR_OUT_OF_RANGE);
+            return;
+        }
+    }
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_ENABLED) != 0U) {
+        cfg.enabled = (enabled_raw != 0U);
+    }
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_VISIBLE) != 0U) {
+        cfg.visible = (visible_raw != 0U);
+    }
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_POS) != 0U) {
+        cfg.pos = pos_raw;
+    }
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_CHAR) != 0U) {
+        cfg.cursor_char = char_raw;
+    }
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_BLINK_10MS) != 0U) {
+        cfg.blink_10ms = blink_raw;
+    }
+
+    if ((mask & W32DL1414_CURSOR_CONFIG_MASK_END_OF_DISPLAY) != 0U) {
+        cfg.end_of_display = (eod_raw != 0U) ? 1U : 0U;
+    }
+
+    if (!cfg.enabled) {
+        cfg.end_of_display = 0;
+    }
+
+    if (!vram_set_cursor_config(&cfg)) {
+        response_begin_fail(output_len, output_buf, W32DL1414_ERROR_INTERNAL);
+        engine_finish_operation(false, W32DL1414_ERROR_INTERNAL);
+        return;
+    }
+
+    engine_response_begin(output_len, output_buf, true, W32DL1414_ERROR_NONE);
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
+}
+
+
+void opcode_handle_get_cursor_config(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf)
 {
     (void)input_len;
     (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_CURSOR_VISIBLE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
+
+    engine_start_operation(W32DL1414_OPCODE_GET_CURSOR_CONFIG);
+
+    struct W32DL1414_cursor_config cfg;
+    vram_get_cursor_config(&cfg);
+
+    response_begin_ok_data(output_len, output_buf, 7);
+    engine_response_push_u8(output_len, output_buf,
+        W32DL1414_CURSOR_CONFIG_MASK_ENABLED |
+        W32DL1414_CURSOR_CONFIG_MASK_VISIBLE |
+        W32DL1414_CURSOR_CONFIG_MASK_POS |
+        W32DL1414_CURSOR_CONFIG_MASK_CHAR |
+        W32DL1414_CURSOR_CONFIG_MASK_BLINK_10MS |
+        W32DL1414_CURSOR_CONFIG_MASK_END_OF_DISPLAY);
+    engine_response_push_u8(output_len, output_buf, cfg.enabled ? 1U : 0U);
+    engine_response_push_u8(output_len, output_buf, cfg.visible ? 1U : 0U);
+    engine_response_push_u8(output_len, output_buf, cfg.pos);
+    engine_response_push_u8(output_len, output_buf, cfg.cursor_char);
+    engine_response_push_u8(output_len, output_buf, cfg.blink_10ms);
+    engine_response_push_u8(output_len, output_buf, cfg.end_of_display ? 1U : 0U);
+
+    engine_finish_operation(true, W32DL1414_ERROR_NONE);
 }
-
-
-void opcode_handle_get_cursor_visible(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_CURSOR_VISIBLE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-void opcode_handle_set_cursor_pos(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_CURSOR_POS);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-
-void opcode_handle_get_cursor_pos(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_CURSOR_POS);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-
-void opcode_handle_set_cursor_char(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_CURSOR_CHAR);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-
-void opcode_handle_get_cursor_char(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_CURSOR_CHAR);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-
-void opcode_handle_set_cursor_blink_freq(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_CURSOR_BLINK_FREQ);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-void opcode_handle_get_cursor_blink_freq(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_CURSOR_BLINK_FREQ);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-void opcode_handle_set_refresh_mode(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_REFRESH_MODE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-void opcode_handle_get_refresh_mode(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_REFRESH_MODE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-void opcode_handle_set_scroll_mode(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_SET_SCROLL_MODE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
-void opcode_handle_get_scroll_mode(volatile uint8_t input_len, const uint8_t *input_buf, uint8_t *output_len,uint8_t *output_buf) 
-{
-    (void)input_len;
-    (void)input_buf;
-    engine_start_operation(W32DL1414_OPCODE_GET_SCROLL_MODE);
-    engine_response_begin(output_len, output_buf, false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-    engine_finish_operation(false, W32DL1414_ERROR_NOT_IMPLEMENTED);
-}
-
 
 void opcode_handle_soft_reset(volatile uint8_t input_len, const uint8_t* input_buf, uint8_t* output_len, uint8_t* output_buf) 
 {
